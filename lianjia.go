@@ -36,18 +36,24 @@ var LianjiaXiaoqu = &Spider{
 	EnableCookie: false,
 	RuleTree: &RuleTree{
 		Root: func(ctx *Context) {
-			ctx.AddQueue(&request.Request{Url: "http://cq.lianjia.com/xiaoqu/", Rule: "获取页码URL"})
+			ctx.AddQueue(&request.Request{Url: "http://cd.lianjia.com/xiaoqu/", Rule: "获取页码URL"})
 		},
 
 		Trunk: map[string]*Rule{
 
 			"获取页码URL": {
 				ParseFunc: func(ctx *Context) {
-					for i := 1; i <= 13; i++ {
-						ctx.AddQueue(&request.Request{
-							Url:  "http://wh.lianjia.com/xiaoqu/hanyang/pg" + strconv.Itoa(i),
-							Rule: "小区列表",
-						})
+					district := [2]string{"jinjiang", "qingyang"}
+					haspages := [2]int{36, 51}
+					for j := 0; j <= 1; j++ {
+						logs.Log.Alert("第" + strconv.Itoa(j+1) + "个小区-共页数" + strconv.Itoa(haspages[j]))
+						for i := 1; i <= haspages[j]; i++ {
+							logs.Log.Critical("地区" + district[j] + "页码" + strconv.Itoa(i))
+							ctx.AddQueue(&request.Request{
+								Url:  "http://cd.lianjia.com/xiaoqu/" + district[j] + "/pg" + strconv.Itoa(i),
+								Rule: "小区列表",
+							})
+						}
 					}
 				},
 			},
@@ -193,7 +199,7 @@ var LianjiaXiaoqu = &Spider{
 					// })
 
 					ctx.AddQueue(&request.Request{
-						Url:  "http://m.lianjia.com/wh" + xiaoqu_id,
+						Url:  "http://m.lianjia.com/cd" + xiaoqu_id,
 						Rule: "xiaoqu",
 						Temp: temp,
 					})
