@@ -16,7 +16,7 @@ import (
 	// 字符串处理包
 	// "regexp"
 	"strconv"
-	// "strings"
+	"strings"
 	// 其他包
 	// "fmt"
 	// "math"
@@ -56,10 +56,10 @@ var LianjiaXiaoqu = &Spider{
 					// 	}
 					// }
 
-					for i := 1; i <= 66; i++ {
+					for i := 51; i <= 100; i++ {
 						logs.Log.Critical("页码" + strconv.Itoa(i))
 						ctx.AddQueue(&request.Request{
-							Url:  "http://xm.lianjia.com/xiaoqu/pg" + strconv.Itoa(i),
+							Url:  "http://sh.lianjia.com/xiaoqu/pudongxinqu/d" + strconv.Itoa(i),
 							Rule: "小区列表",
 						})
 					}
@@ -69,20 +69,19 @@ var LianjiaXiaoqu = &Spider{
 			"小区列表": {
 				ParseFunc: func(ctx *Context) {
 					query := ctx.GetDom()
-					query.Find(".leftContent > .listContent > li").Each(func(i int, s *goquery.Selection) {
-						logs.Log.Critical(s.Text())
-						if url, ok := s.Find("a").Attr("href"); ok {
-							// if i > 2 {
+					query.Find(".con-box > .list-wrap > .house-lst > li").Each(func(i int, s *goquery.Selection) {
+						if url, ok := s.Find(".pic-panel > a").Attr("href"); ok {
+							// if i > 1 {
 							// 	return
 							// }
 							logs.Log.Critical("小区" + url)
-							ctx.AddQueue(&request.Request{Url: url, Rule: "xiaoqu_details"})
+							ctx.AddQueue(&request.Request{Url: "http://sh.lianjia.com" + url, Rule: "xiaoqu"})
 						}
 					})
 				},
 			},
 
-			"xiaoqu": {
+			"xiaoqu_details": {
 				ParseFunc: func(ctx *Context) {
 					query := ctx.GetDom()
 					var arrow string
@@ -123,6 +122,8 @@ var LianjiaXiaoqu = &Spider{
 					"city",
 					"district",
 					"region",
+					"propertyType",
+					"school",
 					"arrow",
 				},
 				ParseFunc: func(ctx *Context) {
@@ -131,16 +132,16 @@ var LianjiaXiaoqu = &Spider{
 				},
 			},
 
-			"xiaoqu_details": {
+			"xiaoqu": {
 				ParseFunc: func(ctx *Context) {
 					query := ctx.GetDom()
 					var buildYears, buildType, propertyCosts, propertyCompony, business, overview, buildingTotal, houseTotal,
-						nearbyStores, station, city, district, region string
+						nearbyStores, station, city, district, region, propertyType, school string
 					var xiaoqu_id string
 
-					detailTitle := query.Find(".detailHeader > .detailTitle").First().Text()
-					detailDesc := query.Find(".detailHeader > .detailDesc").First().Text()
-					query.Find(".intro > .fl > a").Each(func(i int, fla *goquery.Selection) {
+					detailTitle := query.Find(".detail-block > .res-top > .title > .t > h1").First().Text()
+					detailDesc := query.Find(".detail-block > .res-top > .title > .t > .adr").First().Text()
+					query.Find(".intro > .container > .fl > a").Each(func(i int, fla *goquery.Selection) {
 						switch i {
 						case 0:
 							station = fla.Text()
@@ -154,32 +155,39 @@ var LianjiaXiaoqu = &Spider{
 							xiaoqu_id, _ = fla.Attr("href")
 						}
 					})
-					query.Find(".xiaoquInfo > .xiaoquInfoItem").Each(func(i int, s *goquery.Selection) {
-						xiaoquInfoLabel := s.Find(".xiaoquInfoLabel").First().Text()
-						xiaoquInfoContent := s.Find(".xiaoquInfoContent").First().Text()
+					query.Find(".nav-container > .detail-block > .top-detail > .res-info > .col-2 > ol > li").Each(func(i int, s *goquery.Selection) {
+						xiaoquInfoLabel := s.Find("label").First().Text()
+						xiaoquInfoContent := strings.Trim(s.Find(".other").First().Text(), " \n\t\r\n \t\n")
 
 						switch xiaoquInfoLabel {
-						case "建筑年代":
+						case "物业类型：":
+							propertyType = xiaoquInfoContent
+						case "建造年代：":
 							buildYears = xiaoquInfoContent
-						case "建筑类型":
-							buildType = xiaoquInfoContent
-						case "物业费用":
+						case "物业费用：":
 							propertyCosts = xiaoquInfoContent
-						case "物业公司":
+						case "物业公司：":
 							propertyCompony = xiaoquInfoContent
-						case "开发商":
+						case "开发商：":
 							business = xiaoquInfoContent
-						case "小区概况":
-							overview = xiaoquInfoContent
-						case "楼栋总数":
+						case "楼栋总数：":
 							buildingTotal = xiaoquInfoContent
-						case "房屋总数":
+						case "房屋总数：":
 							houseTotal = xiaoquInfoContent
-						case "附近门店":
-							nearbyStores = xiaoquInfoContent
+						case "容积率：":
+							rongjilv := s.Find(".twins").First().Find("label").Text() + s.Find(".twins").First().Find(".other").Text()
+							lvhualv := s.Find(".twins").Last().Find("label").Text() + s.Find(".twins").Last().Find(".other").Text()
+							overview = rongjilv + " " + lvhualv
+						case "学校信息：":
+							school = strings.Trim(s.Find("a").First().Text(), " \n\t\r\n \t\n")
+						case "附近门店：":
+							nearbyStores = strings.Trim(s.Find("a").First().Text(), " \n\t\r\n \t\n")
 						}
 
 					})
+					longitude, _ := query.Find(".zone-map").Attr("longitude")
+					latitude, _ := query.Find(".zone-map").Attr("latitude")
+					arrow := longitude + "," + latitude
 					temp := ctx.CreatItem(map[int]interface{}{
 						0:  buildYears,
 						1:  buildType,
@@ -196,7 +204,12 @@ var LianjiaXiaoqu = &Spider{
 						12: city,
 						13: district,
 						14: region,
+						15: propertyType,
+						16: school,
+						17: arrow,
 					}, "结果")
+					logs.Log.Critical("坐标" + arrow)
+					ctx.Output(temp)
 
 					// ctx.Parse("结果")
 					// query.Find(".resblockQAAgent > .resblckQAEntrance > form > input").Each(func(i int, resblock *goquery.Selection) {
@@ -207,11 +220,11 @@ var LianjiaXiaoqu = &Spider{
 					// 	}
 					// })
 
-					ctx.AddQueue(&request.Request{
-						Url:  "http://m.lianjia.com/xm" + xiaoqu_id,
-						Rule: "xiaoqu",
-						Temp: temp,
-					})
+					// ctx.AddQueue(&request.Request{
+					// 	Url:  "http://m.lianjia.com/xm" + xiaoqu_id,
+					// 	Rule: "xiaoqu",
+					// 	Temp: temp,
+					// })
 				},
 			},
 		},
