@@ -36,33 +36,33 @@ var LianjiaXiaoqu = &Spider{
 	EnableCookie: false,
 	RuleTree: &RuleTree{
 		Root: func(ctx *Context) {
-			ctx.AddQueue(&request.Request{Url: "http://tj.lianjia.com/xiaoqu/", Rule: "获取页码URL"})
+			ctx.AddQueue(&request.Request{Url: "http://su.lianjia.com/xiaoqu/", Rule: "获取页码URL"})
 		},
 
 		Trunk: map[string]*Rule{
 
 			"获取页码URL": {
 				ParseFunc: func(ctx *Context) {
-					// district := [7]string{"huangdao", "chengyang", "jiaozhou", "jiaonan", "jimo", "pingdu", "laixi"}
-					// haspages := [7]int{17, 10, 2, 3, 2, 1, 1}
-					// for j := 0; j <= 6; j++ {
-					// 	logs.Log.Alert("第" + strconv.Itoa(j+1) + "个小区-共页数" + strconv.Itoa(haspages[j]))
-					// 	for i := 1; i <= haspages[j]; i++ {
-					// 		logs.Log.Critical("地区" + district[j] + "页码" + strconv.Itoa(i))
-					// 		ctx.AddQueue(&request.Request{
-					// 			Url:  "http://qd.lianjia.com/xiaoqu/" + district[j] + "/pg" + strconv.Itoa(i),
-					// 			Rule: "小区列表",
-					// 		})
-					// 	}
-					// }
-
-					for i := 51; i <= 100; i++ {
-						logs.Log.Critical("页码" + strconv.Itoa(i))
-						ctx.AddQueue(&request.Request{
-							Url:  "http://sh.lianjia.com/xiaoqu/pudongxinqu/d" + strconv.Itoa(i),
-							Rule: "小区列表",
-						})
+					district := [7]string{"gongyeyuan", "wujiang", "changshu", "taicang", "kunshan", "xiangcheng", "zhangjiagang"}
+					haspages := [7]int{23, 7, 1, 1, 2, 12, 1}
+					for j := 0; j <= 6; j++ {
+						logs.Log.Alert("第" + strconv.Itoa(j+1) + "个小区-共页数" + strconv.Itoa(haspages[j]))
+						for i := 1; i <= haspages[j]; i++ {
+							logs.Log.Critical("地区" + district[j] + "页码" + strconv.Itoa(i))
+							ctx.AddQueue(&request.Request{
+								Url:  "http://su.lianjia.com/xiaoqu/" + district[j] + "/d" + strconv.Itoa(i),
+								Rule: "小区列表",
+							})
+						}
 					}
+
+					// for i := 1; i <= 27; i++ {
+					// 	logs.Log.Critical("页码" + strconv.Itoa(i))
+					// 	ctx.AddQueue(&request.Request{
+					// 		Url:  "http://su.lianjia.com/xiaoqu/fengxian/d" + strconv.Itoa(i),
+					// 		Rule: "小区列表",
+					// 	})
+					// }
 				},
 			},
 
@@ -75,7 +75,7 @@ var LianjiaXiaoqu = &Spider{
 							// 	return
 							// }
 							logs.Log.Critical("小区" + url)
-							ctx.AddQueue(&request.Request{Url: "http://sh.lianjia.com" + url, Rule: "xiaoqu"})
+							ctx.AddQueue(&request.Request{Url: "http://su.lianjia.com" + url, Rule: "xiaoqu"})
 						}
 					})
 				},
